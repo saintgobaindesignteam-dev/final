@@ -240,12 +240,12 @@ window.GlassEngine = (function() {
       'Rank': i + 1,
       'Product': r.ProductName,
       'Classification': r.classification.toUpperCase(),
-      'SHGC': r.SHGC,
+      'Shade': r.Shade,
       'VLT (%)': r.VLT,
+      'SHGC': r.SHGC,
       'ER (%)': r.ER,
       'IR (%)': r.IR,
       'U-Value': r.UValue,
-      'Shade': r.Shade,
       'Glazing': r.GlazingType,
       'Standard': r.Standard,
       'Score': Math.round(r.score * 10) / 10,
@@ -254,7 +254,7 @@ window.GlassEngine = (function() {
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Results');
-    XLSX.utils.sheet_add_aoa(ws, [['Target SHGC: ' + (target.SHGC || ''), 'Target VLT: ' + (target.VLT || ''), 'Target U: ' + (target.UValue || '')]], { origin: 'A' + (data.length + 3) });
+    XLSX.utils.sheet_add_aoa(ws, [['Target Shade: ' + (target.Shade || ''), 'Target VLT: ' + (target.VLT || ''), 'Target SHGC: ' + (target.SHGC || '')]], { origin: 'A' + (data.length + 3) });
     XLSX.writeFile(wb, 'SG_Comparator_Results.xlsx');
   }
 

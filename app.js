@@ -3,8 +3,8 @@ const { useState, useEffect, useRef, useCallback } = React;
 // ===== RADAR CHART COMPONENT =====
 function RadarChart({ results, target }) {
   const canvasRef = useRef(null);
-  const metrics = ['SHGC', 'VLT', 'ER', 'IR', 'UValue'];
-  const labels = ['SHGC', 'VLT %', 'Ext Refl %', 'Int Refl %', 'U-Value'];
+  const metrics = ['VLT', 'SHGC', 'ER', 'IR', 'UValue'];
+  const labels = ['VLT %', 'SHGC', 'Ext Refl %', 'Int Refl %', 'U-Value'];
   const maxVals = { SHGC: 1, VLT: 100, ER: 50, IR: 50, UValue: 6 };
   const colors = ['#10b981', '#f59e0b', '#ef4444', '#00D4FF'];
 
@@ -121,8 +121,8 @@ function ResultCard({ result, index, target }) {
       React.createElement('span', { className: 'meta-tag' }, result.Standard)
     ),
     React.createElement('div', { className: 'perf-bars' },
-      React.createElement(PerfBar, { label: 'SHGC', value: result.SHGC, max: 1, targetVal: target.SHGC || 0 }),
       React.createElement(PerfBar, { label: 'VLT', value: result.VLT, max: 100, targetVal: target.VLT || 0 }),
+      React.createElement(PerfBar, { label: 'SHGC', value: result.SHGC, max: 1, targetVal: target.SHGC || 0 }),
       React.createElement(PerfBar, { label: 'ER', value: result.ER, max: 50, targetVal: target.ER || 0 }),
       React.createElement(PerfBar, { label: 'IR', value: result.IR, max: 50, targetVal: target.IR || 0 }),
       React.createElement(PerfBar, { label: 'U-Value', value: result.UValue, max: 6, targetVal: target.UValue || 0 })
@@ -145,7 +145,7 @@ function TableView({ results, target }) {
     React.createElement('table', { className: 'results-table' },
       React.createElement('thead', null,
         React.createElement('tr', null,
-          ['#', 'Product', 'Type', 'Shade', 'SHGC', 'VLT %', 'ER %', 'IR %', 'U-Value', 'Score', 'Classification'].map(h =>
+          ['#', 'Product', 'Type', 'Shade', 'VLT %', 'SHGC', 'ER %', 'IR %', 'U-Value', 'Score', 'Classification'].map(h =>
             React.createElement('th', { key: h }, h)
           )
         )
@@ -157,8 +157,8 @@ function TableView({ results, target }) {
             React.createElement('td', { style: { fontWeight: 600 } }, r.ProductName),
             React.createElement('td', null, r.GlazingType),
             React.createElement('td', null, r.Shade),
-            React.createElement('td', null, r.SHGC),
             React.createElement('td', null, r.VLT),
+            React.createElement('td', null, r.SHGC),
             React.createElement('td', null, r.ER),
             React.createElement('td', null, r.IR),
             React.createElement('td', null, r.UValue),
@@ -328,10 +328,9 @@ function App() {
       mode === 'performance' && React.createElement('div', { className: 'input-panel' },
         React.createElement('div', { className: 'input-grid' },
           React.createElement('div', { className: 'field-group' },
-            React.createElement('label', { className: 'field-label' }, 'SHGC (Solar Factor)'),
-            React.createElement('div', { className: 'slider-row' },
-              React.createElement('input', { type: 'range', min: 0.05, max: 0.9, step: 0.01, value: perfSHGC, onChange: e => setPerfSHGC(parseFloat(e.target.value)) }),
-              React.createElement('span', { className: 'slider-value' }, perfSHGC.toFixed(2))
+            React.createElement('label', { className: 'field-label' }, 'Shade'),
+            React.createElement('select', { className: 'field-select', value: perfShade, onChange: e => setPerfShade(e.target.value) },
+              shades.map(s => React.createElement('option', { key: s, value: s }, s))
             )
           ),
           React.createElement('div', { className: 'field-group' },
@@ -339,6 +338,13 @@ function App() {
             React.createElement('div', { className: 'slider-row' },
               React.createElement('input', { type: 'range', min: 5, max: 95, step: 1, value: perfVLT, onChange: e => setPerfVLT(parseInt(e.target.value)) }),
               React.createElement('span', { className: 'slider-value' }, perfVLT + '%')
+            )
+          ),
+          React.createElement('div', { className: 'field-group' },
+            React.createElement('label', { className: 'field-label' }, 'SHGC (Solar Factor)'),
+            React.createElement('div', { className: 'slider-row' },
+              React.createElement('input', { type: 'range', min: 0.05, max: 0.9, step: 0.01, value: perfSHGC, onChange: e => setPerfSHGC(parseFloat(e.target.value)) }),
+              React.createElement('span', { className: 'slider-value' }, perfSHGC.toFixed(2))
             )
           ),
           React.createElement('div', { className: 'field-group' },
@@ -360,12 +366,6 @@ function App() {
             React.createElement('div', { className: 'slider-row' },
               React.createElement('input', { type: 'range', min: 1, max: 6, step: 0.1, value: perfUValue, onChange: e => setPerfUValue(parseFloat(e.target.value)) }),
               React.createElement('span', { className: 'slider-value' }, perfUValue.toFixed(1))
-            )
-          ),
-          React.createElement('div', { className: 'field-group' },
-            React.createElement('label', { className: 'field-label' }, 'Shade'),
-            React.createElement('select', { className: 'field-select', value: perfShade, onChange: e => setPerfShade(e.target.value) },
-              shades.map(s => React.createElement('option', { key: s, value: s }, s))
             )
           ),
           React.createElement('div', { className: 'field-group' },
@@ -393,12 +393,12 @@ function App() {
         React.createElement('div', { className: 'target-ref' },
           React.createElement('span', { className: 'target-ref-label' }, '🎯 Target Profile'),
           React.createElement('div', { className: 'target-ref-values' },
-            React.createElement('span', { className: 'target-val' }, 'SHGC: ', React.createElement('strong', null, target.SHGC)),
+            React.createElement('span', { className: 'target-val' }, 'Shade: ', React.createElement('strong', null, target.Shade)),
             React.createElement('span', { className: 'target-val' }, 'VLT: ', React.createElement('strong', null, target.VLT, '%')),
+            React.createElement('span', { className: 'target-val' }, 'SHGC: ', React.createElement('strong', null, target.SHGC)),
             React.createElement('span', { className: 'target-val' }, 'ER: ', React.createElement('strong', null, target.ER, '%')),
             React.createElement('span', { className: 'target-val' }, 'IR: ', React.createElement('strong', null, target.IR, '%')),
             React.createElement('span', { className: 'target-val' }, 'U: ', React.createElement('strong', null, target.UValue)),
-            React.createElement('span', { className: 'target-val' }, 'Shade: ', React.createElement('strong', null, target.Shade)),
             React.createElement('span', { className: 'target-val' }, React.createElement('strong', null, target.GlazingType))
           )
         ),
