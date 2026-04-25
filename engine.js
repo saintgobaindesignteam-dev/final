@@ -113,9 +113,6 @@ window.GlassEngine = (function() {
     else if (dVLT < -3) explanations.push('Lower VLT → less daylight');
     else explanations.push('Similar VLT → equivalent daylight');
 
-    if (product.Shade !== target.Shade) {
-      explanations.push('Different shade category: ' + product.Shade + ' vs ' + target.Shade);
-    }
     return explanations;
   }
 
