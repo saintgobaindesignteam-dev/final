@@ -235,16 +235,26 @@ function App() {
     const element = document.getElementById('pdf-export-content');
     if (!element) return;
     element.classList.add('pdf-mode');
-    const opt = {
-      margin:       10,
-      filename:     'SG_Comparator_Report.pdf',
-      image:        { type: 'jpeg', quality: 1.0 },
-      html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#0a0e1a' },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-    window.html2pdf().set(opt).from(element).save().then(() => {
-      element.classList.remove('pdf-mode');
-    });
+    
+    setTimeout(() => {
+      const opt = {
+        margin:       10,
+        filename:     'SG_Comparator_Report.pdf',
+        image:        { type: 'jpeg', quality: 1.0 },
+        html2canvas:  { 
+          scale: 2, 
+          useCORS: true, 
+          backgroundColor: '#0a0e1a',
+          scrollY: 0,
+          scrollX: 0,
+          windowWidth: document.documentElement.offsetWidth
+        },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      window.html2pdf().set(opt).from(element).save().then(() => {
+        element.classList.remove('pdf-mode');
+      });
+    }, 100);
   }, []);
 
   if (loading || !dataLoaded) {
