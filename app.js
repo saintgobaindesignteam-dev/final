@@ -1,18 +1,17 @@
 const { useState, useEffect, useRef, useCallback } = React;
 
 // ===== RADAR CHART COMPONENT =====
-function RadarChart({ results, target }) {
+function RadarChart({ result, target, color }) {
   const canvasRef = useRef(null);
   const metrics = ['VLT', 'SHGC', 'ER', 'IR', 'UValue'];
   const labels = ['VLT %', 'SHGC', 'Ext Refl %', 'Int Refl %', 'U-Value'];
   const maxVals = { SHGC: 1, VLT: 100, ER: 50, IR: 50, UValue: 6 };
-  const colors = ['#10b981', '#f59e0b', '#ef4444', '#00D4FF'];
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const W = 400, H = 400, cx = W / 2, cy = H / 2, R = 140;
+    const W = 280, H = 280, cx = W / 2, cy = H / 2, R = 100;
     canvas.width = W * 2; canvas.height = H * 2;
     canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
     ctx.scale(2, 2);
@@ -47,14 +46,14 @@ function RadarChart({ results, target }) {
       ctx.stroke();
       const lx = cx + (R + 24) * Math.cos(a), ly = cy + (R + 24) * Math.sin(a);
       ctx.fillStyle = '#8b95b0';
-      ctx.font = '11px Inter, sans-serif';
+      ctx.font = '10px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(labels[i], lx, ly);
     }
 
     // Draw target polygon
-    function drawPoly(data, color, fill) {
+    function drawPoly(data, colorStr, fill) {
       ctx.beginPath();
       for (let i = 0; i < n; i++) {
         const a = startAngle + i * angleStep;
@@ -63,20 +62,22 @@ function RadarChart({ results, target }) {
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
       ctx.closePath();
-      if (fill) { ctx.fillStyle = color + '18'; ctx.fill(); }
-      ctx.strokeStyle = color;
+      if (fill) { ctx.fillStyle = colorStr + '18'; ctx.fill(); }
+      ctx.strokeStyle = colorStr;
       ctx.lineWidth = 2;
       ctx.stroke();
     }
 
     // Target dashed
-    ctx.setLineDash([6, 4]);
+    ctx.setLineDash([4, 4]);
     drawPoly(target, '#00D4FF', false);
     ctx.setLineDash([]);
 
-    // Results
-    results.forEach((r, i) => drawPoly(r, colors[i], true));
-  }, [results, target]);
+    // Result
+    if (result) {
+      drawPoly(result, color, true);
+    }
+  }, [result, target, color]);
 
   return React.createElement('canvas', { ref: canvasRef, style: { maxWidth: '100%' } });
 }
@@ -145,7 +146,7 @@ function TableView({ results, target }) {
     React.createElement('table', { className: 'results-table' },
       React.createElement('thead', null,
         React.createElement('tr', null,
-          ['#', 'Product', 'Type', 'Shade', 'VLT %', 'SHGC', 'ER %', 'IR %', 'U-Value', 'Score', 'Classification'].map(h =>
+          ['#', 'Product', 'Type', 'Shade', 'VLT %', 'SHGC', 'ER %', 'IR %', 'U-Value', 'Classification'].map(h =>
             React.createElement('th', { key: h }, h)
           )
         )
@@ -162,7 +163,6 @@ function TableView({ results, target }) {
             React.createElement('td', null, r.ER),
             React.createElement('td', null, r.IR),
             React.createElement('td', null, r.UValue),
-            React.createElement('td', null, r.score.toFixed(1)),
             React.createElement('td', { style: { color: clsColors[r.classification], fontWeight: 700, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.5px' } }, r.classification)
           )
         )
@@ -390,16 +390,25 @@ function App() {
 
       // ===== RESULTS =====
       searched && results.length > 0 && React.createElement('div', { id: 'pdf-export-content', style: { marginTop: 40 } },
-        React.createElement('div', { className: 'target-ref' },
-          React.createElement('span', { className: 'target-ref-label' }, '🎯 Target Profile'),
-          React.createElement('div', { className: 'target-ref-values' },
-            React.createElement('span', { className: 'target-val' }, 'Shade: ', React.createElement('strong', null, target.Shade)),
-            React.createElement('span', { className: 'target-val' }, 'VLT: ', React.createElement('strong', null, target.VLT, '%')),
-            React.createElement('span', { className: 'target-val' }, 'SHGC: ', React.createElement('strong', null, target.SHGC)),
-            React.createElement('span', { className: 'target-val' }, 'ER: ', React.createElement('strong', null, target.ER, '%')),
-            React.createElement('span', { className: 'target-val' }, 'IR: ', React.createElement('strong', null, target.IR, '%')),
-            React.createElement('span', { className: 'target-val' }, 'U: ', React.createElement('strong', null, target.UValue)),
-            React.createElement('span', { className: 'target-val' }, React.createElement('strong', null, target.GlazingType))
+        React.createElement('div', { className: 'target-ref', style: { display: 'block', padding: '24px' } },
+          React.createElement('div', { className: 'target-ref-label', style: { marginBottom: '16px', fontSize: '14px' } }, '🎯 Target Profile'),
+          React.createElement('div', { style: { overflowX: 'auto' } },
+            React.createElement('table', { style: { width: '100%', minWidth: '600px', borderCollapse: 'collapse', textAlign: 'center' } },
+              React.createElement('thead', null,
+                React.createElement('tr', null,
+                  ['Shade', 'VLT %', 'SHGC', 'ER %', 'IR %', 'U-Value', 'Glazing Type'].map(h => 
+                    React.createElement('th', { key: h, style: { padding: '12px', borderBottom: '1px solid var(--border-glass)', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', fontWeight: '700' } }, h)
+                  )
+                )
+              ),
+              React.createElement('tbody', null,
+                React.createElement('tr', null,
+                  [target.Shade, target.VLT, target.SHGC, target.ER, target.IR, target.UValue, target.GlazingType].map((val, idx) => 
+                    React.createElement('td', { key: idx, style: { padding: '16px 12px', fontWeight: '700', fontSize: '15px', color: 'var(--text-primary)' } }, val !== undefined ? val : '-')
+                  )
+                )
+              )
+            )
           )
         ),
 
@@ -422,20 +431,32 @@ function App() {
 
         React.createElement('div', { className: 'radar-section' },
           React.createElement('div', { className: 'radar-title' }, '📊 Performance Comparison Radar'),
-          React.createElement('div', { className: 'radar-container' },
-            React.createElement(RadarChart, { results: results, target: target }),
-            React.createElement('div', { className: 'radar-legend' },
-              React.createElement('div', { className: 'legend-item' },
-                React.createElement('div', { className: 'legend-dot', style: { background: '#00D4FF', border: '2px dashed #00D4FF', width: 14, height: 14 } }),
-                'Target Profile'
-              ),
-              results.map((r, i) => {
-                const c = ['#10b981', '#f59e0b', '#ef4444'][i];
-                return React.createElement('div', { key: i, className: 'legend-item' },
-                  React.createElement('div', { className: 'legend-dot', style: { background: c } }),
-                  '#' + (i+1) + ' ' + r.ProductName
-                );
-              })
+          React.createElement('div', { className: 'radar-grid', style: { display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center' } },
+            results.map((r, i) => {
+              const c = ['#10b981', '#f59e0b', '#ef4444'][i];
+              return React.createElement('div', { key: i, style: { textAlign: 'center', background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', flex: '1 1 280px', maxWidth: '340px' } },
+                React.createElement('div', { style: { color: c, fontWeight: '800', marginBottom: '6px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px' } }, '#' + (i+1) + ' Match'),
+                React.createElement('div', { style: { fontWeight: '700', marginBottom: '20px', fontSize: '16px', color: 'var(--text-primary)' } }, r.ProductName),
+                React.createElement(RadarChart, { result: r, target: target, color: c })
+              );
+            })
+          ),
+          React.createElement('div', { className: 'radar-legend', style: { marginTop: '32px', justifyContent: 'center', flexDirection: 'row', display: 'flex', gap: '24px', flexWrap: 'wrap' } },
+            React.createElement('div', { className: 'legend-item' },
+              React.createElement('div', { className: 'legend-dot', style: { background: 'transparent', border: '2px dashed #00D4FF', width: 14, height: 14 } }),
+              'Target Profile (Dashed)'
+            ),
+            React.createElement('div', { className: 'legend-item' },
+              React.createElement('div', { className: 'legend-dot', style: { background: '#10b981' } }),
+              '#1 Match'
+            ),
+            React.createElement('div', { className: 'legend-item' },
+              React.createElement('div', { className: 'legend-dot', style: { background: '#f59e0b' } }),
+              '#2 Match'
+            ),
+            React.createElement('div', { className: 'legend-item' },
+              React.createElement('div', { className: 'legend-dot', style: { background: '#ef4444' } }),
+              '#3 Match'
             )
           )
         )

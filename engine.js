@@ -54,13 +54,13 @@ window.GlassEngine = (function() {
   }
 
   // Core scoring formula (lower = better match)
-  // Priority: 1. Glazing (Filter) 2. Shade 3. SF (SHGC) 4. VLT 5. ER 6. IR 7. UValue
+  // Priority: 1. Glazing/Standard 2. Shade 3. SHGC 4. VLT 5. ER 6. IR 7. UValue
   function computeScore(product, target) {
     const shadePenalty = (product.Shade === target.Shade) ? 0 : 1000000;
     const shgcDev = Math.abs((product.SHGC || 0) - (target.SHGC || 0)) * 100000;
     const vltDev = Math.abs((product.VLT || 0) - (target.VLT || 0)) * 100;
-    const erDev = Math.abs((product.ER || 0) - (target.ER || 0)) * 50;
-    const irDev = Math.abs((product.IR || 0) - (target.IR || 0)) * 50;
+    const erDev = Math.abs((product.ER || 0) - (target.ER || 0)) * 60;
+    const irDev = Math.abs((product.IR || 0) - (target.IR || 0)) * 40;
     const uDev = Math.abs((product.UValue || 0) - (target.UValue || 0)) * 10;
     return shadePenalty + shgcDev + vltDev + erDev + irDev + uDev;
   }
@@ -120,53 +120,50 @@ window.GlassEngine = (function() {
   // Main search function - returns top 3 SG matches
   function findMatches(target) {
     // Step 1: Hard filters based on Priority list
-    // 1. SGU/DGU (Exact)
-    // 2. Shade (Exact - Priority 2)
-    // 3. SF+-0.05
-    // 4. VLT+-5%
-    // 5. ER+-5%
-    // 6. IR+-5%
+    // 1. SGU/DGU and Standard (Exact)
+    // 2. Shade (Exact)
+    // 3. SHGC +-0.05
+    // 4. VLT +-5%
+    // 5. ER +-5%
+    // 6. IR +-5%
     
-    const applyFilters = (strictShade, strictSF, strictSpecs) => {
+    const applyFilters = (levels) => {
       return ALL_PRODUCTS.filter(p => {
         if (p.Brand !== 'Saint-Gobain') return false;
         if (target.GlazingType && p.GlazingType !== target.GlazingType) return false;
         if (target.Standard && p.Standard !== target.Standard) return false;
         
-        if (strictShade && target.Shade && p.Shade !== target.Shade) return false;
-        
-        if (strictSF && target.SHGC !== undefined) {
-          if (Math.abs((p.SHGC || 0) - target.SHGC) > 0.05) return false;
-        }
-        
-        if (strictSpecs) {
-          if (target.VLT !== undefined && Math.abs((p.VLT || 0) - target.VLT) > 5) return false;
-          if (target.ER !== undefined && Math.abs((p.ER || 0) - target.ER) > 5) return false;
-          if (target.IR !== undefined && Math.abs((p.IR || 0) - target.IR) > 5) return false;
-        }
+        if (levels.strictShade && target.Shade && p.Shade !== target.Shade) return false;
+        if (levels.strictSHGC && target.SHGC !== undefined && Math.abs((p.SHGC || 0) - target.SHGC) > 0.05) return false;
+        if (levels.strictVLT && target.VLT !== undefined && Math.abs((p.VLT || 0) - target.VLT) > 5) return false;
+        if (levels.strictER && target.ER !== undefined && Math.abs((p.ER || 0) - target.ER) > 5) return false;
+        if (levels.strictIR && target.IR !== undefined && Math.abs((p.IR || 0) - target.IR) > 5) return false;
         
         return true;
       });
     };
 
     // Try most strict first
-    let candidates = applyFilters(true, true, true);
+    let candidates = applyFilters({ strictShade: true, strictSHGC: true, strictVLT: true, strictER: true, strictIR: true });
     
-    // Relax specs (VLT/ER/IR) if needed, but keep Shade and SF strict
-    if (candidates.length < 3) candidates = applyFilters(true, true, false);
-    
-    // Relax SF if needed (±0.3), but still keep Shade strict
-    if (candidates.length < 3) candidates = applyFilters(true, false, false);
+    // Relax from lowest priority (IR) to highest (SHGC) if < 3 matches
+    if (candidates.length < 3) {
+      candidates = applyFilters({ strictShade: true, strictSHGC: true, strictVLT: true, strictER: true, strictIR: false });
+    }
+    if (candidates.length < 3) {
+      candidates = applyFilters({ strictShade: true, strictSHGC: true, strictVLT: true, strictER: false, strictIR: false });
+    }
+    if (candidates.length < 3) {
+      candidates = applyFilters({ strictShade: true, strictSHGC: true, strictVLT: false, strictER: false, strictIR: false });
+    }
+    if (candidates.length < 3) {
+      candidates = applyFilters({ strictShade: true, strictSHGC: false, strictVLT: false, strictER: false, strictIR: false });
+    }
 
-    // If still no results, return empty or whatever matches Brand + Glazing + Shade
+    // If still no results, return empty or whatever matches Brand + Glazing + Standard + Shade
     // (We do NOT relax Shade anymore as per user request)
     if (candidates.length === 0) {
-      candidates = ALL_PRODUCTS.filter(p => {
-        if (p.Brand !== 'Saint-Gobain') return false;
-        if (target.GlazingType && p.GlazingType !== target.GlazingType) return false;
-        if (target.Shade && p.Shade !== target.Shade) return false;
-        return true;
-      });
+      candidates = applyFilters({ strictShade: true, strictSHGC: false, strictVLT: false, strictER: false, strictIR: false });
     }
 
     // Step 2: Score all candidates
