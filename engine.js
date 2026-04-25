@@ -53,10 +53,20 @@ window.GlassEngine = (function() {
     return ALL_PRODUCTS.filter(p => p.Brand === brand);
   }
 
+  // Helper to check if shades match, treating Neutral and Grey as equivalent
+  function isShadeMatch(shade1, shade2) {
+    if (!shade1 || !shade2) return true;
+    if (shade1 === shade2) return true;
+    const s1 = shade1.toLowerCase();
+    const s2 = shade2.toLowerCase();
+    if ((s1 === 'neutral' || s1 === 'grey') && (s2 === 'neutral' || s2 === 'grey')) return true;
+    return false;
+  }
+
   // Core scoring formula (lower = better match)
   // Priority: 1. Glazing/Standard 2. Shade 3. SHGC 4. VLT 5. ER 6. IR 7. UValue
   function computeScore(product, target) {
-    const shadePenalty = (product.Shade === target.Shade) ? 0 : 1000000;
+    const shadePenalty = isShadeMatch(product.Shade, target.Shade) ? 0 : 1000000;
     const shgcDev = Math.abs((product.SHGC || 0) - (target.SHGC || 0)) * 100000;
     const vltDev = Math.abs((product.VLT || 0) - (target.VLT || 0)) * 100;
     const erDev = Math.abs((product.ER || 0) - (target.ER || 0)) * 60;
@@ -133,7 +143,7 @@ window.GlassEngine = (function() {
         if (target.GlazingType && p.GlazingType !== target.GlazingType) return false;
         if (target.Standard && p.Standard !== target.Standard) return false;
         
-        if (levels.strictShade && target.Shade && p.Shade !== target.Shade) return false;
+        if (levels.strictShade && target.Shade && !isShadeMatch(p.Shade, target.Shade)) return false;
         if (levels.strictSHGC && target.SHGC !== undefined && Math.abs((p.SHGC || 0) - target.SHGC) > 0.05) return false;
         if (levels.strictVLT && target.VLT !== undefined && Math.abs((p.VLT || 0) - target.VLT) > 5) return false;
         if (levels.strictER && target.ER !== undefined && Math.abs((p.ER || 0) - target.ER) > 5) return false;
