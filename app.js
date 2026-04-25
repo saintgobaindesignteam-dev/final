@@ -146,7 +146,7 @@ function TableView({ results, target }) {
     React.createElement('table', { className: 'results-table' },
       React.createElement('thead', null,
         React.createElement('tr', null,
-          ['#', 'Product', 'Type', 'Shade', 'VLT %', 'SHGC', 'ER %', 'IR %', 'U-Value', 'Classification'].map(h =>
+          ['#', 'Product', 'Type', 'Standard', 'Shade', 'VLT %', 'SHGC', 'ER %', 'IR %', 'U-Value', 'Classification'].map(h =>
             React.createElement('th', { key: h }, h)
           )
         )
@@ -157,6 +157,7 @@ function TableView({ results, target }) {
             React.createElement('td', null, i + 1),
             React.createElement('td', { style: { fontWeight: 600 } }, r.ProductName),
             React.createElement('td', null, r.GlazingType),
+            React.createElement('td', null, r.Standard),
             React.createElement('td', null, r.Shade),
             React.createElement('td', null, r.VLT),
             React.createElement('td', null, r.SHGC),
@@ -184,6 +185,7 @@ function App() {
   // Product mode state
   const [selBrand, setSelBrand] = useState('');
   const [selProduct, setSelProduct] = useState('');
+  const [selProductGlazing, setSelProductGlazing] = useState('');
   const [brandProducts, setBrandProducts] = useState([]);
 
   // Performance mode state
@@ -205,24 +207,27 @@ function App() {
 
   useEffect(() => {
     if (selBrand) {
-      const prods = GlassEngine.getProductsByBrand(selBrand);
+      let prods = GlassEngine.getProductsByBrand(selBrand);
+      if (selProductGlazing) {
+        prods = prods.filter(p => p.GlazingType === selProductGlazing);
+      }
       const unique = [...new Map(prods.map(p => [p.ProductName, p])).values()];
       unique.sort((a, b) => a.ProductName.localeCompare(b.ProductName));
       setBrandProducts(unique);
       setSelProduct('');
     }
-  }, [selBrand]);
+  }, [selBrand, selProductGlazing]);
 
   const handleProductSearch = useCallback(() => {
     if (!selBrand || !selProduct) return;
     const all = GlassEngine.getProducts();
-    const source = all.find(p => p.Brand === selBrand && p.ProductName === selProduct);
+    const source = all.find(p => p.Brand === selBrand && p.ProductName === selProduct && (!selProductGlazing || p.GlazingType === selProductGlazing));
     if (!source) return;
     const t = { SHGC: source.SHGC, VLT: source.VLT, ER: source.ER, IR: source.IR, UValue: source.UValue, Shade: source.Shade, GlazingType: source.GlazingType, Standard: source.Standard };
     setTarget(t);
     setResults(GlassEngine.findMatches(t));
     setSearched(true);
-  }, [selBrand, selProduct]);
+  }, [selBrand, selProduct, selProductGlazing]);
 
   const handlePerfSearch = useCallback(() => {
     const t = { SHGC: perfSHGC, VLT: perfVLT, ER: perfER, IR: perfIR, UValue: perfUValue, Shade: perfShade, GlazingType: perfGlazing, Standard: perfStandard };
@@ -312,6 +317,14 @@ function App() {
             )
           ),
           React.createElement('div', { className: 'field-group' },
+            React.createElement('label', { className: 'field-label' }, 'Glazing Type'),
+            React.createElement('select', { className: 'field-select', value: selProductGlazing, onChange: e => setSelProductGlazing(e.target.value) },
+              React.createElement('option', { value: '' }, 'All Types'),
+              React.createElement('option', { value: 'SGU' }, 'SGU (Single)'),
+              React.createElement('option', { value: 'DGU' }, 'DGU (Double)')
+            )
+          ),
+          React.createElement('div', { className: 'field-group' },
             React.createElement('label', { className: 'field-label' }, 'Product'),
             React.createElement('select', { className: 'field-select', value: selProduct, onChange: e => setSelProduct(e.target.value), disabled: !selBrand },
               React.createElement('option', { value: '' }, selBrand ? 'Select Product' : 'Select brand first'),
@@ -396,14 +409,14 @@ function App() {
             React.createElement('table', { style: { width: '100%', minWidth: '600px', borderCollapse: 'collapse', textAlign: 'center' } },
               React.createElement('thead', null,
                 React.createElement('tr', null,
-                  ['Shade', 'VLT %', 'SHGC', 'ER %', 'IR %', 'U-Value', 'Glazing Type'].map(h => 
+                  ['Shade', 'VLT %', 'SHGC', 'ER %', 'IR %', 'U-Value', 'Glazing Type', 'Standard'].map(h => 
                     React.createElement('th', { key: h, style: { padding: '12px', borderBottom: '1px solid var(--border-glass)', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', fontWeight: '700' } }, h)
                   )
                 )
               ),
               React.createElement('tbody', null,
                 React.createElement('tr', null,
-                  [target.Shade, target.VLT, target.SHGC, target.ER, target.IR, target.UValue, target.GlazingType].map((val, idx) => 
+                  [target.Shade, target.VLT, target.SHGC, target.ER, target.IR, target.UValue, target.GlazingType, target.Standard].map((val, idx) => 
                     React.createElement('td', { key: idx, style: { padding: '16px 12px', fontWeight: '700', fontSize: '15px', color: 'var(--text-primary)' } }, val !== undefined ? val : '-')
                   )
                 )
