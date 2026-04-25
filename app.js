@@ -411,11 +411,14 @@ function App() {
           )
         ),
 
-        viewMode === 'cards'
-          ? React.createElement('div', { className: 'cards-grid' },
-              results.map((r, i) => React.createElement(ResultCard, { key: i, result: r, index: i, target: target }))
-            )
-          : React.createElement(TableView, { results: results, target: target }),
+        React.createElement('div', { className: 'cards-view-container', style: { display: viewMode === 'cards' ? 'block' : 'none' } },
+          React.createElement('div', { className: 'cards-grid' },
+            results.map((r, i) => React.createElement(ResultCard, { key: i, result: r, index: i, target: target }))
+          )
+        ),
+        React.createElement('div', { className: 'table-view-container', style: { display: viewMode === 'table' ? 'block' : 'none' } },
+          React.createElement(TableView, { results: results, target: target })
+        ),
 
         React.createElement('div', { className: 'radar-section' },
           React.createElement('div', { className: 'radar-title' }, '📊 Performance Comparison Radar'),
