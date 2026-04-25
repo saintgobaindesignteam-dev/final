@@ -64,10 +64,11 @@ window.GlassEngine = (function() {
   }
 
   // Core scoring formula (lower = better match)
-  // Priority: 1. Glazing/Standard 2. Shade 3. SHGC 4. VLT 5. ER 6. IR 7. UValue
+  // Priority: 1. Glazing/Standard 2. Shade 3. SHGC / VLT (Balanced) 4. ER 5. IR 6. UValue
   function computeScore(product, target) {
     const shadePenalty = isShadeMatch(product.Shade, target.Shade) ? 0 : 1000000;
-    const shgcDev = Math.abs((product.SHGC || 0) - (target.SHGC || 0)) * 100000;
+    // A 0.01 deviation in SHGC (100 pts) is balanced against a 1% deviation in VLT (100 pts)
+    const shgcDev = Math.abs((product.SHGC || 0) - (target.SHGC || 0)) * 10000;
     const vltDev = Math.abs((product.VLT || 0) - (target.VLT || 0)) * 100;
     const erDev = Math.abs((product.ER || 0) - (target.ER || 0)) * 60;
     const irDev = Math.abs((product.IR || 0) - (target.IR || 0)) * 40;
@@ -156,7 +157,7 @@ window.GlassEngine = (function() {
     // Try most strict first
     let candidates = applyFilters({ strictShade: true, strictSHGC: true, strictVLT: true, strictER: true, strictIR: true });
     
-    // Relax from lowest priority (IR) to highest (SHGC) if < 3 matches
+    // Relax from lowest priority (IR) upwards
     if (candidates.length < 3) {
       candidates = applyFilters({ strictShade: true, strictSHGC: true, strictVLT: true, strictER: true, strictIR: false });
     }
@@ -164,9 +165,7 @@ window.GlassEngine = (function() {
       candidates = applyFilters({ strictShade: true, strictSHGC: true, strictVLT: true, strictER: false, strictIR: false });
     }
     if (candidates.length < 3) {
-      candidates = applyFilters({ strictShade: true, strictSHGC: true, strictVLT: false, strictER: false, strictIR: false });
-    }
-    if (candidates.length < 3) {
+      // Drop BOTH SHGC and VLT strict filters simultaneously to allow balanced mathematical scoring
       candidates = applyFilters({ strictShade: true, strictSHGC: false, strictVLT: false, strictER: false, strictIR: false });
     }
 
